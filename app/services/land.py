@@ -39,3 +39,10 @@ class LandService:
             
         except Exception as e:
             raise Exception(f"Error updating land: {str(e)}")
+        
+    async def get_land(self, land_id: str) -> Optional[LandCreate]:
+        land = await self.repository.find_one(land_id)
+        if not land:
+            raise HTTPException(status_code=404, detail="Land not found")
+        land["_id"] = str(land["_id"])
+        return LandCreate(**land)

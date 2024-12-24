@@ -36,6 +36,7 @@ ENV/
 
 # Satellite image files
 satellite_images/
+bands/
 fcm_credentials-secret.json
 
 # Logs

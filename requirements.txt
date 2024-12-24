@@ -7,4 +7,3 @@ python-dotenv==1.0.0
 sentinelsat
 geopandas
 shapely
-sentinelhub

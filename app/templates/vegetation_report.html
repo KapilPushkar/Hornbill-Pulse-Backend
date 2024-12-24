@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vegetation Analysis Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        .graph-container {
+            margin: 30px 0;
+        }
+        .graph-container img {
+            max-width: 100%;
+            height: auto;
+        }
+        .ndvi-table {
+            margin: 20px 0;
+        }
+        .ndvi-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vegetation Analysis Report</h1>
+    
+    <h2>Appendix: Land Cover Analysis</h2>
+    
+    <h3>Understanding NDVI and Land Cover Classification</h3>
+    <p>The NDVI (Normalized Difference Vegetation Index) is a standardized index that helps us identify and analyze vegetation cover. It ranges from -1 to +1, where higher values indicate healthier and denser vegetation.</p>
+    
+    <table class="ndvi-table">
+        <tr>
+            <th>NDVI Range</th>
+            <th>Classification</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>-1.0 to 0.0</td>
+            <td>Water contained areas</td>
+            <td>Water bodies, Irrigated land, or snow.</td>
+        </tr>
+        <tr>
+            <td>0.0 to 0.2</td>
+            <td>Bare soil or sparse vegetation</td>
+            <td>Very minimal vegetation, often arid regions.</td>
+        </tr>
+        <tr>
+            <td>0.2 to 0.4</td>
+            <td>Moderate vegetation</td>
+            <td>Grasslands, shrubs, or sparse crops.</td>
+        </tr>
+        <tr>
+            <td>0.4 to 0.6</td>
+            <td>Healthy vegetation</td>
+            <td>Agricultural areas, forests, or dense shrubs.</td>
+        </tr>
+        <tr>
+            <td>0.6 to 1.0</td>
+            <td>Very dense vegetation</td>
+            <td>Tropical rainforests or areas with extremely lush vegetation.</td>
+        </tr>
+    </table>
+
+    <h3>Quarterly Analysis Definition</h3>
+    <p>The quarterly analysis divides the year into four periods:</p>
+    <ul>
+        <li>Q1: January to March</li>
+        <li>Q2: April to June</li>
+        <li>Q3: July to September</li>
+        <li>Q4: October to December</li>
+    </ul>
+    
+    {% for metric, title in metrics.items() %}
+    <h3>{{ title }}</h3>
+    
+    <h4>Monthly Analysis</h4>
+    <table>
+        <tr>
+            <th>Year</th>
+            {% for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] %}
+            <th>{{ month }}</th>
+            {% endfor %}
+        </tr>
+        {% for year in years %}
+        <tr>
+            <td>{{ year }}</td>
+            {% for month_data in monthly_data[year] %}
+            <td>{{ "%.2f"|format(calculate_percentage(month_data[metric.replace('_percentage', '_pixels')], month_data['total_pixels'])) }}%</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <h4>Monthly Heatmap</h4>
+    <div class="graph-container">
+        <img src="{{ heatmap_base }}_{{ metric }}.png" alt="{{ title }} Heatmap">
+    </div>
+
+    <h4>Quarterly Analysis</h4>
+    <table>
+        <tr>
+            <th>Year</th>
+            <th>Q1 (Jan-Mar)</th>
+            <th>Q2 (Apr-Jun)</th>
+            <th>Q3 (Jul-Sep)</th>
+            <th>Q4 (Oct-Dec)</th>
+        </tr>
+        {% for year in years %}
+        <tr>
+            <td>{{ year }}</td>
+            {% for quarter in ['Q1', 'Q2', 'Q3', 'Q4'] %}
+            <td>{{ "%.2f"|format(quarterly_data[year][quarter][metric]) }}%</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h4>Quarterly Trends</h4>
+    <div class="graph-container">
+        <img src="{{ quarterly_graphs[metric] }}" alt="Quarterly Trends - {{ title }}">
+    </div>
+    {% endfor %}
+</body>
+</html> 

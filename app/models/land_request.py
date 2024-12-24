@@ -3,6 +3,6 @@ from typing import List
 from .coordinates import Coordinates
 
 class LandRequest(BaseModel):
-    coordinates: List[Coordinates]
+    coordinates: List[List[float]]
     user_id: str
     land_name: str
