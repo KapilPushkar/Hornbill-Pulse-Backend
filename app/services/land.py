@@ -49,4 +49,6 @@ class LandService:
 
     async def get_lands_by_user_id(self, user_id: str) -> List[LandResponse]:
         lands = await self.repository.find_many({"user_id": user_id})
+        for land in lands:
+            land["_id"] = str(land["_id"])
         return [LandResponse(**land) for land in lands]
