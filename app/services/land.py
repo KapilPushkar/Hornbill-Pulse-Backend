@@ -52,3 +52,7 @@ class LandService:
         for land in lands:
             land["_id"] = str(land["_id"])
         return [LandResponse(**land) for land in lands]
+
+    async def delete_land(self, land_id: str) -> bool:
+        result = await self.repository.delete(land_id)
+        return result.deleted_count > 0

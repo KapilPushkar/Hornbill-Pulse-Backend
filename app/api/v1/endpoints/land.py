@@ -38,3 +38,16 @@ async def get_lands_by_user_id(
         return lands
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{land_id}", response_model=dict)
+async def delete_land(
+    land_id: str,
+    land_service: LandService = Depends()
+):
+    try:
+        deleted = await land_service.delete_land(land_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Land not found")
+        return {"message": "Land deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
