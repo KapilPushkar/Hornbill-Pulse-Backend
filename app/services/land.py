@@ -41,8 +41,12 @@ class LandService:
             raise Exception(f"Error updating land: {str(e)}")
         
     async def get_land(self, land_id: str) -> Optional[LandCreate]:
-        land = await self.repository.find_one(land_id)
+        land = await self.repository.find_one({"_id": ObjectId(land_id)})
         if not land:
             raise HTTPException(status_code=404, detail="Land not found")
         land["_id"] = str(land["_id"])
         return LandCreate(**land)
+
+    async def get_lands_by_user_id(self, user_id: str) -> List[LandResponse]:
+        lands = await self.repository.find_many({"user_id": user_id})
+        return [LandResponse(**land) for land in lands]

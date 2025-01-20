@@ -25,3 +25,16 @@ async def update_land(
         return updated_land
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/user/{user_id}", response_model=List[LandResponse])
+async def get_lands_by_user_id(
+    user_id: str,
+    land_service: LandService = Depends()
+):
+    try:
+        lands = await land_service.get_lands_by_user_id(user_id)
+        if not lands:
+            raise HTTPException(status_code=404, detail="No lands found for the user")
+        return lands
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

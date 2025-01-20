@@ -15,11 +15,10 @@ async def generate_vegetation_report(
     if not land:
         raise HTTPException(status_code=404, detail="Land not found")
 
-    # Add async task
     background_tasks.add_task(
         generate_land_analysis_report,
         land.user_id,
-        land_id,  # Pass land_id to store with stats
+        land_id,
         land.coordinates
     )
     

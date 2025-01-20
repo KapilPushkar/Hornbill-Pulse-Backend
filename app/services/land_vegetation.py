@@ -126,15 +126,15 @@ async def generate_land_analysis_report(userId: str, land_id: str, coordinates: 
     vegetation_repository = VegetationRepository()
     stored_stats = await vegetation_repository.create(vegetation_stats)
     
-    report_path = generate_html_report(land_id, yearly_data)
+    # report_path = generate_html_report(land_id, yearly_data)
     
-    if stored_stats:
-        await vegetation_repository.update_report_path(
-            str(stored_stats["_id"]), 
-            report_path
-        )
+    # if stored_stats:
+    #     await vegetation_repository.update_report_path(
+    #         str(stored_stats["_id"]), 
+    #         report_path
+    #     )
     
-    return report_path
+    return "Vegetation analysis report generated"
 
 async def get_monthly_vegetation_stats(coordinates: List[List[float]], year: int = 2024):
     client = get_copernicus_client()
