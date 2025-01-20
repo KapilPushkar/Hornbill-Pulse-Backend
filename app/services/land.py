@@ -55,4 +55,4 @@ class LandService:
 
     async def delete_land(self, land_id: str) -> bool:
         result = await self.repository.delete(land_id)
-        return result.deleted_count > 0
+        return result
