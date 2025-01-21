@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from ....models.schemas.land import LandRequest, LandResponse
 from ....services.land import LandService
+from ....worker import add_task
+from ....services.land_vegetation import generate_land_analysis_report
+from ....utils.serializers import serialize_to_response
 
 router = APIRouter()
 
@@ -10,7 +13,10 @@ async def create_land(
     land_request: LandRequest,
     land_service: LandService = Depends()
 ):
-    return await land_service.create_land(land_request)
+    land = await land_service.create_land(land_request)
+    add_task(lambda: generate_land_analysis_report(land['user_id'], str(land['_id']), land['coordinates']))
+    
+    return serialize_to_response(land)
 
 @router.put("/{land_id}", response_model=LandResponse)
 async def update_land(
@@ -33,8 +39,6 @@ async def get_lands_by_user_id(
 ):
     try:
         lands = await land_service.get_lands_by_user_id(user_id)
-        if not lands:
-            raise HTTPException(status_code=404, detail="No lands found for the user")
         return lands
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

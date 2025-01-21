@@ -2,7 +2,6 @@ from typing import List, Optional
 from fastapi import HTTPException
 from ..repositories.land import LandRepository
 from ..models.schemas.land import LandRequest, LandResponse, LandCreate
-from ..utils.serializers import serialize_to_response
 from ..db.mongodb import db
 from bson import ObjectId
 from datetime import datetime
@@ -15,10 +14,19 @@ class LandService:
         land_dict = land_request.model_dump()
         land_dict["created_at"] = datetime.utcnow()
         land_dict["modified_at"] = datetime.utcnow()
+
+        existing_lands = await self.repository.find_many({"user_id": land_request.user_id})
+        existing_names = [land["land_name"] for land in existing_lands]
+        original_name = land_request.land_name
+        counter = 1
+        while land_request.land_name in existing_names:
+            land_request.land_name = f"{original_name} {counter}"
+            counter += 1
+
         created_land = await self.repository.create(land_dict)
         if not created_land:
             raise HTTPException(status_code=400, detail="Failed to create land")
-        return serialize_to_response(created_land)
+        return created_land
 
     async def update_land(self, land_id: str, land_data: LandRequest) -> Optional[LandResponse]:
         try:
