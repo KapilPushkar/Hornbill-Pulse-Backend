@@ -1,5 +1,8 @@
 from typing import List, Optional
 from fastapi import HTTPException
+from shapely.geometry import Polygon
+from shapely.ops import transform
+from pyproj import Transformer
 from ..repositories.land import LandRepository
 from ..models.schemas.land import LandRequest, LandResponse, LandCreate
 from ..db.mongodb import db
@@ -15,12 +18,31 @@ class LandService:
         land_dict["created_at"] = datetime.utcnow()
         land_dict["modified_at"] = datetime.utcnow()
 
+        coordinates = [(coord[1], coord[0]) for coord in land_request.coordinates]
+
+        polygon = Polygon(coordinates)
+        
+        transformer = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
+        projected_polygon = transform(transformer.transform, polygon)
+        
+        area_sq_m = projected_polygon.area
+
+        if area_sq_m >= 1e4:
+            land_dict["area"] = area_sq_m / 1e4
+            land_dict["area_unit"] = "hectares"
+        elif area_sq_m >= 4046.86:
+            land_dict["area"] = area_sq_m / 4046.86
+            land_dict["area_unit"] = "acres"
+        else:
+            land_dict["area"] = area_sq_m
+            land_dict["area_unit"] = "sq/m"
+
         existing_lands = await self.repository.find_many({"user_id": land_request.user_id})
         existing_names = [land["land_name"] for land in existing_lands]
         original_name = land_request.land_name
         counter = 1
         while land_request.land_name in existing_names:
-            land_request.land_name = f"{original_name} {counter}"
+            land_dict["land_name"] = f"{original_name} {counter}"
             counter += 1
 
         created_land = await self.repository.create(land_dict)

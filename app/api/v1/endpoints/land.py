@@ -14,7 +14,7 @@ async def create_land(
     land_service: LandService = Depends()
 ):
     land = await land_service.create_land(land_request)
-    add_task(lambda: generate_land_analysis_report(land['user_id'], str(land['_id']), land['coordinates']))
+    # add_task(lambda: generate_land_analysis_report(land['user_id'], str(land['_id']), land['coordinates']))
     
     return serialize_to_response(land)
 

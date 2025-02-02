@@ -5,6 +5,9 @@ class LandRequest(BaseModel):
     coordinates: List[List[float]] = Field(...)
     user_id: str = Field(...)
     land_name: str = Field(...)
+    area: float = Field(default=0.0)
+    area_unit: str = Field(default="sq/m")
+    status: str = Field(default="Submitted")
 
 class LandCreate(LandRequest):
     coordinates: List[List[float]] = Field(...)

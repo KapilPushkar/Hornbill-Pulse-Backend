@@ -110,6 +110,9 @@ class VegetationService:
         self.repository = VegetationRepository()
 
 async def generate_land_analysis_report(userId: str, land_id: str, coordinates: List[List[float]]):
+    land_repository = land_repository()
+    await land_repository.update_one({"_id": ObjectId(land_id)}, {"$set": {"status": "Processing"}})
+
     current_year = datetime.now().year
     yearly_data = {}
     
@@ -133,6 +136,7 @@ async def generate_land_analysis_report(userId: str, land_id: str, coordinates: 
     #         str(stored_stats["_id"]), 
     #         report_path
     #     )
+    await land_repository.update_one({"_id": ObjectId(land_id)}, {"$set": {"status": "Processed"}})
     
     return "Vegetation analysis report generated"
 
