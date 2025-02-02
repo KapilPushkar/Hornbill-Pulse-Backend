@@ -28,13 +28,13 @@ class LandService:
         area_sq_m = projected_polygon.area
 
         if area_sq_m >= 1e4:
-            land_dict["area"] = area_sq_m / 1e4
+            land_dict["area"] = round(area_sq_m / 1e4, 2)
             land_dict["area_unit"] = "hectares"
         elif area_sq_m >= 4046.86:
-            land_dict["area"] = area_sq_m / 4046.86
+            land_dict["area"] = round(area_sq_m / 4046.86, 2)
             land_dict["area_unit"] = "acres"
         else:
-            land_dict["area"] = area_sq_m
+            land_dict["area"] = round(area_sq_m, 2)
             land_dict["area_unit"] = "sq/m"
 
         existing_lands = await self.repository.find_many({"user_id": land_request.user_id})
