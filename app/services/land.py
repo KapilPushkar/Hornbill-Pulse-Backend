@@ -43,6 +43,7 @@ class LandService:
         counter = 1
         while land_request.land_name in existing_names:
             land_dict["land_name"] = f"{original_name} {counter}"
+            land_request.land_name = land_dict["land_name"]
             counter += 1
 
         created_land = await self.repository.create(land_dict)
