@@ -21,8 +21,6 @@ from typing import List
 from ..repositories.vegetation import VegetationRepository
 from bson import ObjectId
 
-land_repository = LandRepository()
-
 def get_empty_stats():
     return {
         'mean_ndvi': 0,
@@ -113,6 +111,7 @@ class VegetationService:
         self.repository = VegetationRepository()
 
 async def generate_land_analysis_report(userId: str, land_id: str, coordinates: List[List[float]]):
+    land_repository = LandRepository()
     await land_repository.update_one({"_id": ObjectId(land_id)}, {"$set": {"status": "Processing"}})
 
     current_year = datetime.now().year
