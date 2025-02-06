@@ -20,6 +20,7 @@ from ..repositories.land import LandRepository
 from typing import List
 from ..repositories.vegetation import VegetationRepository
 from bson import ObjectId
+from ..repositories.raw_data import RawDataRepository
 
 def get_empty_stats():
     return {
@@ -38,28 +39,40 @@ def get_empty_stats():
 def get_copernicus_client():
     return CDSEApi()
 
+def get_band_data(band, polygon):
+    with rasterio.open(band) as raw_band:
+        transformer = Transformer.from_crs("EPSG:4326", raw_band.crs, always_xy=True)
+        def transform_func(x, y):
+            return transformer.transform(x, y)
+        polygon_transformed = transform(transform_func, polygon)
+        masked, _ = mask(raw_band, [polygon_transformed], crop=True)
+        float_band_data = masked[0].astype(float)
+    return float_band_data
+
+def get_raw_cropped_band_data(bands, coordinates):
+    if not bands or not coordinates:
+        return get_empty_stats()
+    try:
+        swapped_coordinates = [[coord[1], coord[0]] for coord in coordinates]
+        polygon = Polygon(swapped_coordinates)
+        
+        red_band = get_band_data(bands['B04'], polygon)
+        nir_band = get_band_data(bands['B08'], polygon)
+
+        return red_band, nir_band
+
+    except Exception as e:
+        return get_empty_stats()
+
 def calculate_vegetation_stats(bands, coordinates):
     if not bands or not coordinates:
         return get_empty_stats()
     try:
         swapped_coordinates = [[coord[1], coord[0]] for coord in coordinates]
         polygon = Polygon(swapped_coordinates)
-
-        with rasterio.open(bands['B04']) as red:
-            transformer = Transformer.from_crs("EPSG:4326", red.crs, always_xy=True)
-            def transform_func(x, y):
-                return transformer.transform(x, y)
-            polygon_transformed = transform(transform_func, polygon)
-            red_masked, _ = mask(red, [polygon_transformed], crop=True)
-            red_band = red_masked[0].astype(float)
-            
-        with rasterio.open(bands['B08']) as nir:
-            transformer = Transformer.from_crs("EPSG:4326", nir.crs, always_xy=True)
-            def transform_func(x, y):
-                return transformer.transform(x, y)
-            polygon_transformed = transform(transform_func, polygon)
-            nir_masked, _ = mask(nir, [polygon_transformed], crop=True)
-            nir_band = nir_masked[0].astype(float)
+        
+        red_band = get_band_data(bands['B04'], polygon)
+        nir_band = get_band_data(bands['B08'], polygon)
             
         ndvi = np.where(
             (nir_band + red_band) > 0,
@@ -110,14 +123,25 @@ class VegetationService:
     def __init__(self):
         self.repository = VegetationRepository()
 
+async def store_land_raw_monthly_data(userId: str, land_id: str, coordinates: List[List[float]]):
+    land_repository = LandRepository()
+    land_repository.sync_update(land_id, {"status": "Processing"})
+
+    current_year = datetime.now().year
+    
+    for year in range(current_year-3, current_year+1):
+        await store_monthly_raw_data(coordinates, year, land_id)
+    
+    land_repository.sync_update(land_id,{"status": "Processed"})
+
 async def generate_land_analysis_report(userId: str, land_id: str, coordinates: List[List[float]]):
     land_repository = LandRepository()
-    await land_repository.update(land_id, {"status": "Processing"})
+    land_repository.sync_update(land_id, {"status": "Processing"})
 
     current_year = datetime.now().year
     yearly_data = {}
     
-    for year in range(current_year-3, current_year+1):
+    for year in range(current_year-3, current_year-2):
         monthly_data = await get_monthly_vegetation_stats(coordinates, year)
         yearly_data[str(year)] = monthly_data
     
@@ -128,7 +152,7 @@ async def generate_land_analysis_report(userId: str, land_id: str, coordinates: 
     }
     
     vegetation_repository = VegetationRepository()
-    stored_stats = await vegetation_repository.create(vegetation_stats)
+    stored_stats = vegetation_repository.sync_create(vegetation_stats)
     
     # report_path = generate_html_report(land_id, yearly_data)
     
@@ -137,9 +161,65 @@ async def generate_land_analysis_report(userId: str, land_id: str, coordinates: 
     #         str(stored_stats["_id"]), 
     #         report_path
     #     )
-    await land_repository.update(land_id,{"status": "Processed"})
+    land_repository.sync_update(land_id,{"status": "Processed"})
     
     return "Vegetation analysis report generated"
+
+async def store_monthly_raw_data(coordinates: List[List[float]], year: int = 2024, land_id: str = None):
+    client = get_copernicus_client()
+    current_date = datetime.now().date()
+
+    raw_data_repository = RawDataRepository()
+    
+    for month in range(1, 13):
+        _, last_day = calendar.monthrange(year, month)
+        start_date = f"{year}-{month:02d}-01"
+        end_date = f"{year}-{month:02d}-{last_day}"
+        startDate = datetime.strptime(start_date, "%Y-%m-%d").date()
+
+        if startDate > current_date:
+            break
+        
+        try:
+            processed_results = client.process_area_temporal(
+                coordinates, 
+                start_date, 
+                end_date,
+                band_names=['B04', 'B08']
+            )
+            
+            if processed_results:
+                first_date = list(processed_results.keys())[0]
+                bands = processed_results[first_date]
+                
+                red_band, nir_band = get_raw_cropped_band_data(bands, coordinates)
+
+                raw_data_repository.sync_create({
+                    "land_id": ObjectId(land_id),
+                    "year": year,
+                    "month": month,
+                    "band": "red",
+                    "data": red_band.tolist(),
+                    "created_at": datetime.now()
+                })
+
+                raw_data_repository.sync_create({
+                    "land_id": ObjectId(land_id),
+                    "year": year,
+                    "month": month,
+                    "band": "nir",
+                    "data": nir_band.tolist(),
+                    "created_at":  datetime.now()
+                })
+                for band_path in bands.values():
+                    if os.path.exists(band_path):
+                        os.remove(band_path)
+
+            else:
+                print(f"No data available for {calendar.month_name[month]} {year}")
+                
+        except Exception as e:
+            print(f"Error processing {calendar.month_name[month]}: {e}")
 
 async def get_monthly_vegetation_stats(coordinates: List[List[float]], year: int = 2024):
     client = get_copernicus_client()

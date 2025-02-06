@@ -3,7 +3,7 @@ from typing import List
 from ....models.schemas.land import LandRequest, LandResponse
 from ....services.land import LandService
 from ....worker import add_task
-from ....services.land_vegetation import generate_land_analysis_report
+from ....services.land_vegetation import store_land_raw_monthly_data
 from ....utils.serializers import serialize_to_response
 
 router = APIRouter()
@@ -14,7 +14,7 @@ async def create_land(
     land_service: LandService = Depends()
 ):
     land = await land_service.create_land(land_request)
-    add_task(lambda: generate_land_analysis_report(land['user_id'], str(land['_id']), land['coordinates']))
+    add_task(lambda: store_land_raw_monthly_data(land['user_id'], str(land['_id']), land['coordinates']))
     
     return serialize_to_response(land)
 

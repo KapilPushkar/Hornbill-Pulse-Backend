@@ -301,7 +301,7 @@ class CDSEApi:
                         tile_id = path.split('_T')[-1].split('_')[0]
                         unique_tiles.add(tile_id)
                     
-                    if len(unique_tiles) >= 1:
+                    if len(unique_tiles) >= 1:#skipping mosaic for now
                         print(f"Single unique tile found ({list(unique_tiles)[0]}), skipping mosaic...")
                         bands = self.get_bands(
                             s3_paths[0].lstrip('/eodata/'),
