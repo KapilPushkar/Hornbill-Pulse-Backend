@@ -87,7 +87,7 @@ backend/
 ### 1. Clone the Repository
 
 ```sh
-git clone <your-repository-url>
+git clone git@github.com:Hornbill-AgriTech/TruImpact-Backend.git
 cd backend
 ```
 

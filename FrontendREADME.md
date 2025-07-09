@@ -25,7 +25,7 @@ Clone this repository to your local machine.
 **Location:** Any folder of your choice.
 
 ```sh
-git clone <your-repository-url>
+git clone git@github.com:Hornbill-AgriTech/TruImpact-Frontend.git
 cd land_mapping
 ```
 
