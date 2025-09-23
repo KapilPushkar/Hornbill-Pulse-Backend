@@ -1,6 +1,7 @@
 from fastapi import APIRouter
-from .endpoints import land, report
+from .endpoints import land, report, auth
 
 api_router = APIRouter()
+api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
 api_router.include_router(land.router, prefix="/lands", tags=["lands"])
-api_router.include_router(report.router, prefix="/reports", tags=["reports"]) 
+api_router.include_router(report.router, prefix="/reports", tags=["reports"])
