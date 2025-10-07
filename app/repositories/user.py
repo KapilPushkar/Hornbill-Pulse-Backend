@@ -8,7 +8,7 @@ from datetime import datetime
 
 class UserRepository:
     def __init__(self):
-        self.collection: AsyncIOMotorCollection = db.get_collection("users")
+        self.collection: AsyncIOMotorCollection = db.db["users"]
 
     async def create_user(self, user_data: UserCreate) -> dict:
         """Create a new user"""
